@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied - API Manager{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="text-center">
+        <div class="bounce-in">
+            <i class="fas fa-lock text-6xl text-yellow-500 mb-6"></i>
+            <h1 class="text-6xl font-bold text-gray-900 mb-4">403</h1>
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Access Denied</h2>
+            <p class="text-gray-600 mb-8 max-w-md mx-auto">
+                You don't have permission to access this resource. 
+                Please check your credentials or contact an administrator.
+            </p>
+            <div class="space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center">
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard.index') }}" class="btn-hover gradient-bg text-white font-bold py-3 px-6 rounded-lg shadow-lg">
+                    <i class="fas fa-tachometer-alt mr-2"></i>
+                    Dashboard
+                </a>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn-hover gradient-bg text-white font-bold py-3 px-6 rounded-lg shadow-lg">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Sign In
+                </a>
+                {% endif %}
+                <a href="{{ url_for('index') }}" class="btn-hover inline-block border-2 border-purple-600 text-purple-600 font-bold py-3 px-6 rounded-lg hover:bg-purple-50">
+                    <i class="fas fa-home mr-2"></i>
+                    Go Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

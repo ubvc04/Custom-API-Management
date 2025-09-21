@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - API Manager{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="text-center">
+        <div class="bounce-in">
+            <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-6"></i>
+            <h1 class="text-6xl font-bold text-gray-900 mb-4">500</h1>
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Internal Server Error</h2>
+            <p class="text-gray-600 mb-8 max-w-md mx-auto">
+                Something went wrong on our end. We're working to fix this issue. 
+                Please try again later or contact support if the problem persists.
+            </p>
+            <div class="space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center">
+                <button onclick="window.location.reload()" class="btn-hover gradient-bg text-white font-bold py-3 px-6 rounded-lg shadow-lg">
+                    <i class="fas fa-redo mr-2"></i>
+                    Try Again
+                </button>
+                <a href="{{ url_for('index') }}" class="btn-hover inline-block border-2 border-purple-600 text-purple-600 font-bold py-3 px-6 rounded-lg hover:bg-purple-50">
+                    <i class="fas fa-home mr-2"></i>
+                    Go Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

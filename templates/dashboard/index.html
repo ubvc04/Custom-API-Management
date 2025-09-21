@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - API Manager{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Welcome Header -->
+    <div class="mb-8 fade-in">
+        <div class="bg-white rounded-lg shadow-lg p-6 gradient-bg text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold">Welcome back, {{ current_user.username }}!</h1>
+                    <p class="text-purple-100 mt-2">Manage your API keys and monitor usage from your dashboard</p>
+                </div>
+                <div class="hidden md:block">
+                    <i class="fas fa-chart-line text-5xl opacity-20"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Keys -->
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg card-hover">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="gradient-bg text-white w-12 h-12 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-key text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total API Keys</dt>
+                            <dd class="text-2xl font-bold text-gray-900" id="totalKeys">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Keys -->
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg card-hover">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="gradient-success text-white w-12 h-12 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-check-circle text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Active Keys</dt>
+                            <dd class="text-2xl font-bold text-gray-900" id="activeKeys">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Usage -->
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg card-hover">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="gradient-warning text-white w-12 h-12 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-chart-bar text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Usage</dt>
+                            <dd class="text-2xl font-bold text-gray-900" id="totalUsage">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Usage -->
+        <div class="bg-white overflow-hidden shadow-lg rounded-lg card-hover">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="gradient-danger text-white w-12 h-12 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Recent Usage (7d)</dt>
+                            <dd class="text-2xl font-bold text-gray-900" id="recentUsage">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="{{ url_for('api_keys.generate_key') }}" class="btn-hover bg-white p-6 rounded-lg shadow-lg text-center border-2 border-dashed border-gray-300 hover:border-purple-500 transition-all duration-200">
+                <i class="fas fa-plus-circle text-3xl text-purple-600 mb-3"></i>
+                <h3 class="text-lg font-semibold text-gray-900">Generate New Key</h3>
+                <p class="text-gray-600 text-sm">Create a new secure API key</p>
+            </a>
+            
+            <a href="{{ url_for('dashboard.keys') }}" class="btn-hover bg-white p-6 rounded-lg shadow-lg text-center border-2 border-dashed border-gray-300 hover:border-green-500 transition-all duration-200">
+                <i class="fas fa-list text-3xl text-green-600 mb-3"></i>
+                <h3 class="text-lg font-semibold text-gray-900">Manage Keys</h3>
+                <p class="text-gray-600 text-sm">View and manage your API keys</p>
+            </a>
+            
+            <a href="{{ url_for('dashboard.usage') }}" class="btn-hover bg-white p-6 rounded-lg shadow-lg text-center border-2 border-dashed border-gray-300 hover:border-blue-500 transition-all duration-200">
+                <i class="fas fa-analytics text-3xl text-blue-600 mb-3"></i>
+                <h3 class="text-lg font-semibold text-gray-900">View Analytics</h3>
+                <p class="text-gray-600 text-sm">Monitor usage and performance</p>
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Activity and Usage Chart -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Usage Chart -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                Usage Trends (Last 7 Days)
+            </h3>
+            <canvas id="usageChart" width="400" height="200"></canvas>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-history text-green-600 mr-2"></i>
+                    Recent Activity
+                </h3>
+                <a href="{{ url_for('dashboard.usage') }}" class="text-sm text-purple-600 hover:text-purple-500">
+                    View all
+                </a>
+            </div>
+            <div id="recentActivity" class="space-y-3">
+                <!-- Activities will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Most Used Endpoint -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-trophy text-yellow-600 mr-2"></i>
+            Statistics
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center">
+                <div class="text-3xl font-bold text-purple-600" id="mostUsedEndpoint">-</div>
+                <div class="text-sm text-gray-600">Most Used Endpoint</div>
+            </div>
+            <div class="text-center">
+                <div class="text-3xl font-bold text-green-600" id="recentLogins">-</div>
+                <div class="text-sm text-gray-600">Recent Logins (7d)</div>
+            </div>
+            <div class="text-center">
+                <div class="text-3xl font-bold text-blue-600" id="avgDailyUsage">-</div>
+                <div class="text-sm text-gray-600">Avg Daily Usage</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let usageChart;
+
+    async function loadDashboardStats() {
+        try {
+            const response = await fetch('/dashboard/api/stats');
+            const data = await response.json();
+            
+            document.getElementById('totalKeys').textContent = data.total_keys;
+            document.getElementById('activeKeys').textContent = data.active_keys;
+            document.getElementById('totalUsage').textContent = data.total_usage.toLocaleString();
+            document.getElementById('recentUsage').textContent = data.recent_usage;
+            document.getElementById('mostUsedEndpoint').textContent = data.most_used_endpoint;
+            document.getElementById('recentLogins').textContent = data.recent_logins;
+            
+            // Calculate average daily usage
+            const avgDaily = Math.round(data.recent_usage / 7);
+            document.getElementById('avgDailyUsage').textContent = avgDaily;
+            
+        } catch (error) {
+            console.error('Error loading dashboard stats:', error);
+        }
+    }
+
+    async function loadUsageChart() {
+        try {
+            const response = await fetch('/dashboard/api/usage_chart?days=7');
+            const data = await response.json();
+            
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            usageChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'API Requests',
+                        data: data.data,
+                        borderColor: 'rgb(147, 51, 234)',
+                        backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error('Error loading usage chart:', error);
+        }
+    }
+
+    async function loadRecentActivity() {
+        try {
+            const response = await fetch('/dashboard/api/recent_activity?per_page=5');
+            const data = await response.json();
+            
+            const container = document.getElementById('recentActivity');
+            
+            if (data.activities.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No recent activity</p>';
+                return;
+            }
+            
+            const activitiesHTML = data.activities.map(activity => {
+                const date = new Date(activity.timestamp);
+                const timeAgo = getTimeAgo(date);
+                const statusColor = activity.status === 'success' ? 'text-green-600' : 'text-red-600';
+                const statusIcon = activity.status === 'success' ? 'fa-check' : 'fa-times';
+                
+                return `
+                    <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <div class="flex-shrink-0">
+                            <i class="fas ${statusIcon} ${statusColor}"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">
+                                ${activity.endpoint}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                ${activity.key_name} • ${timeAgo}
+                            </p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activity.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${activity.status}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = activitiesHTML;
+            
+        } catch (error) {
+            console.error('Error loading recent activity:', error);
+        }
+    }
+
+    function getTimeAgo(date) {
+        const now = new Date();
+        const diff = now - date;
+        const minutes = Math.floor(diff / (1000 * 60));
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        
+        if (minutes < 60) {
+            return `${minutes}m ago`;
+        } else if (hours < 24) {
+            return `${hours}h ago`;
+        } else {
+            return `${days}d ago`;
+        }
+    }
+
+    // Load data when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        loadDashboardStats();
+        loadUsageChart();
+        loadRecentActivity();
+        
+        // Refresh data every 5 minutes
+        setInterval(() => {
+            loadDashboardStats();
+            loadRecentActivity();
+        }, 300000);
+    });
+</script>
+{% endblock %}

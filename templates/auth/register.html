@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - API Manager{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="text-center bounce-in">
+            <i class="fas fa-user-plus text-4xl text-purple-600 mb-4"></i>
+            <h2 class="text-3xl font-bold text-gray-900">Create your account</h2>
+            <p class="mt-2 text-gray-600">Get started with secure API management</p>
+        </div>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow-xl rounded-lg sm:px-10 fade-in">
+            <!-- Registration Form -->
+            <form id="registerForm" class="space-y-6">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">
+                        Username
+                    </label>
+                    <div class="mt-1 relative">
+                        <input id="username" name="username" type="text" required 
+                               class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                               placeholder="Choose a username">
+                        <i class="fas fa-user absolute right-3 top-3 text-gray-400"></i>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500">At least 3 characters</p>
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">
+                        Email Address
+                    </label>
+                    <div class="mt-1 relative">
+                        <input id="email" name="email" type="email" required 
+                               class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                               placeholder="Enter your email">
+                        <i class="fas fa-envelope absolute right-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">
+                        Password
+                    </label>
+                    <div class="mt-1 relative">
+                        <input id="password" name="password" type="password" required 
+                               class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                               placeholder="Create a password">
+                        <button type="button" onclick="togglePassword('password')" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-eye" id="password-eye"></i>
+                        </button>
+                    </div>
+                    <div id="passwordStrength" class="mt-2 space-y-1">
+                        <div class="flex items-center text-xs">
+                            <i class="fas fa-circle text-gray-300 mr-2"></i>
+                            <span class="text-gray-500">At least 8 characters</span>
+                        </div>
+                        <div class="flex items-center text-xs">
+                            <i class="fas fa-circle text-gray-300 mr-2"></i>
+                            <span class="text-gray-500">One uppercase letter</span>
+                        </div>
+                        <div class="flex items-center text-xs">
+                            <i class="fas fa-circle text-gray-300 mr-2"></i>
+                            <span class="text-gray-500">One lowercase letter</span>
+                        </div>
+                        <div class="flex items-center text-xs">
+                            <i class="fas fa-circle text-gray-300 mr-2"></i>
+                            <span class="text-gray-500">One number</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700">
+                        Confirm Password
+                    </label>
+                    <div class="mt-1 relative">
+                        <input id="confirmPassword" name="confirmPassword" type="password" required 
+                               class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                               placeholder="Confirm your password">
+                        <button type="button" onclick="togglePassword('confirmPassword')" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-eye" id="confirmPassword-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center">
+                    <input id="terms" name="terms" type="checkbox" required
+                           class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                    <label for="terms" class="ml-2 block text-sm text-gray-900">
+                        I agree to the <a href="#" class="text-purple-600 hover:text-purple-500">Terms of Service</a> and 
+                        <a href="#" class="text-purple-600 hover:text-purple-500">Privacy Policy</a>
+                    </label>
+                </div>
+
+                <div>
+                    <button type="submit" class="btn-hover w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white gradient-bg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                        <span class="flex items-center">
+                            <i class="fas fa-user-plus mr-2"></i>
+                            Create Account
+                        </span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- OTP Verification Form (Hidden) -->
+            <div id="otpForm" class="hidden space-y-6">
+                <div class="text-center">
+                    <i class="fas fa-envelope-open text-4xl text-green-500 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900">Verify Your Email</h3>
+                    <p class="text-sm text-gray-600 mt-2">
+                        We've sent a verification code to your email address.
+                    </p>
+                </div>
+
+                <form id="verifyOtpForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" id="userId" name="user_id" value="">
+                    
+                    <div>
+                        <label for="otpCode" class="block text-sm font-medium text-gray-700">
+                            Verification Code
+                        </label>
+                        <div class="mt-1">
+                            <input id="otpCode" name="otp_code" type="text" required maxlength="6"
+                                   class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 text-center text-lg font-mono tracking-widest"
+                                   placeholder="000000">
+                        </div>
+                    </div>
+
+                    <div>
+                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white gradient-success focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                            <i class="fas fa-check mr-2"></i>
+                            Verify Email
+                        </button>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="button" id="resendOtp" class="text-sm text-purple-600 hover:text-purple-500">
+                            Didn't receive the code? Resend
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="mt-6">
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-white text-gray-500">Already have an account?</span>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <a href="{{ url_for('auth.login') }}" class="w-full flex justify-center py-2 px-4 border border-purple-600 rounded-md shadow-sm text-sm font-medium text-purple-600 bg-white hover:bg-purple-50 transition-all duration-200">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Sign in instead
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        const eye = document.getElementById(inputId + '-eye');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            eye.classList.remove('fa-eye');
+            eye.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            eye.classList.remove('fa-eye-slash');
+            eye.classList.add('fa-eye');
+        }
+    }
+
+    function validatePasswordStrength(password) {
+        const checks = [
+            { test: password.length >= 8, index: 0 },
+            { test: /[A-Z]/.test(password), index: 1 },
+            { test: /[a-z]/.test(password), index: 2 },
+            { test: /\d/.test(password), index: 3 }
+        ];
+
+        const strengthItems = document.querySelectorAll('#passwordStrength .flex');
+        
+        checks.forEach(check => {
+            const item = strengthItems[check.index];
+            const icon = item.querySelector('i');
+            const text = item.querySelector('span');
+            
+            if (check.test) {
+                icon.classList.remove('fa-circle', 'text-gray-300');
+                icon.classList.add('fa-check-circle', 'text-green-500');
+                text.classList.remove('text-gray-500');
+                text.classList.add('text-green-600');
+            } else {
+                icon.classList.remove('fa-check-circle', 'text-green-500');
+                icon.classList.add('fa-circle', 'text-gray-300');
+                text.classList.remove('text-green-600');
+                text.classList.add('text-gray-500');
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const registerForm = document.getElementById('registerForm');
+        const otpForm = document.getElementById('otpForm');
+        const verifyOtpForm = document.getElementById('verifyOtpForm');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+
+        // Password strength validation
+        passwordInput.addEventListener('input', function() {
+            validatePasswordStrength(this.value);
+        });
+
+        // Password confirmation validation
+        confirmPasswordInput.addEventListener('input', function() {
+            if (this.value !== passwordInput.value) {
+                this.setCustomValidity('Passwords do not match');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+
+        // Registration form submission
+        registerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(registerForm);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Validate password confirmation
+            if (data.password !== data.confirmPassword) {
+                api.showNotification('Passwords do not match', 'error');
+                return;
+            }
+            
+            // Remove confirmPassword from data before sending
+            delete data.confirmPassword;
+            delete data.terms;
+            
+            try {
+                const result = await api.request('/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+                
+                api.showNotification(result.message, 'success');
+                
+                if (result.requires_otp) {
+                    // Show OTP form
+                    document.getElementById('userId').value = result.user_id;
+                    registerForm.style.display = 'none';
+                    otpForm.classList.remove('hidden');
+                } else {
+                    // Admin user, redirect to login
+                    setTimeout(() => {
+                        window.location.href = '/auth/login';
+                    }, 2000);
+                }
+                
+            } catch (error) {
+                // Error already shown by api.request
+            }
+        });
+
+        // OTP verification form submission
+        verifyOtpForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(verifyOtpForm);
+            const data = Object.fromEntries(formData.entries());
+            
+            try {
+                const result = await api.request('/auth/verify_otp', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+                
+                api.showNotification(result.message, 'success');
+                
+                // Redirect to login
+                setTimeout(() => {
+                    window.location.href = '/auth/login';
+                }, 2000);
+                
+            } catch (error) {
+                // Error already shown by api.request
+            }
+        });
+
+        // Resend OTP
+        document.getElementById('resendOtp').addEventListener('click', async function() {
+            const userId = document.getElementById('userId').value;
+            
+            try {
+                const result = await api.request('/auth/resend_otp', {
+                    method: 'POST',
+                    body: JSON.stringify({ user_id: userId })
+                });
+                
+                api.showNotification(result.message, 'success');
+                
+            } catch (error) {
+                // Error already shown by api.request
+            }
+        });
+
+        // OTP input formatting
+        document.getElementById('otpCode').addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '');
+        });
+    });
+</script>
+{% endblock %}
