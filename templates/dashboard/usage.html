@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}API Usage Analytics{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>📊 API Usage Analytics</h2>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-primary">
+                        🏠 Dashboard
+                    </a>
+                    <a href="{{ url_for('dashboard.keys') }}" class="btn btn-outline-secondary">
+                        🔑 API Keys
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Requests</h6>
+                            <h3 id="totalRequests">-</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Successful</h6>
+                            <h3 id="successfulRequests">-</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Failed</h6>
+                            <h3 id="failedRequests">-</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Active Keys</h6>
+                            <h3 id="activeKeys">-</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-key fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📈 Usage Trends (Last 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="usageChart" width="400" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🕒 Recent API Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>API Key</th>
+                                    <th>Endpoint</th>
+                                    <th>Status</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activityTable">
+                                <tr>
+                                    <td colspan="5" class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        Loading activity...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadUsageData();
+    loadRecentActivity();
+});
+
+async function loadUsageData() {
+    try {
+        const response = await fetch('/api/usage/summary');
+        if (response.ok) {
+            const data = await response.json();
+            
+            document.getElementById('totalRequests').textContent = data.total || 0;
+            document.getElementById('successfulRequests').textContent = data.successful || 0;
+            document.getElementById('failedRequests').textContent = data.failed || 0;
+            document.getElementById('activeKeys').textContent = data.active_keys || 0;
+            
+            // Create usage chart if data available
+            if (data.daily_usage) {
+                createUsageChart(data.daily_usage);
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load usage data:', error);
+        // Set default values
+        document.getElementById('totalRequests').textContent = '0';
+        document.getElementById('successfulRequests').textContent = '0';
+        document.getElementById('failedRequests').textContent = '0';
+        document.getElementById('activeKeys').textContent = '0';
+    }
+}
+
+async function loadRecentActivity() {
+    try {
+        const response = await fetch('/api/usage/recent');
+        const activityTable = document.getElementById('activityTable');
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (data.activity && data.activity.length > 0) {
+                activityTable.innerHTML = data.activity.map(activity => `
+                    <tr>
+                        <td>${new Date(activity.timestamp).toLocaleString()}</td>
+                        <td>${activity.key_preview || 'Unknown'}</td>
+                        <td><code>${activity.endpoint}</code></td>
+                        <td>
+                            <span class="badge ${getStatusBadgeClass(activity.status)}">
+                                ${activity.status}
+                            </span>
+                        </td>
+                        <td>${activity.ip_address || 'Unknown'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                activityTable.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">
+                            No API activity yet
+                        </td>
+                    </tr>
+                `;
+            }
+        } else {
+            throw new Error('Failed to load activity');
+        }
+    } catch (error) {
+        console.error('Failed to load recent activity:', error);
+        document.getElementById('activityTable').innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    Unable to load activity data
+                </td>
+            </tr>
+        `;
+    }
+}
+
+function getStatusBadgeClass(status) {
+    switch (status) {
+        case 'success': return 'bg-success';
+        case 'failure': return 'bg-danger';
+        case 'invalid_key': return 'bg-warning';
+        case 'expired': return 'bg-secondary';
+        default: return 'bg-secondary';
+    }
+}
+
+function createUsageChart(dailyUsage) {
+    const ctx = document.getElementById('usageChart').getContext('2d');
+    
+    // Simple chart implementation (you can replace with Chart.js for better charts)
+    const canvas = document.getElementById('usageChart');
+    const context = canvas.getContext('2d');
+    
+    // Clear canvas
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw simple usage representation
+    context.fillStyle = '#007bff';
+    context.fillRect(10, 10, 100, 50);
+    context.fillStyle = '#fff';
+    context.font = '14px Arial';
+    context.fillText('Usage chart placeholder', 20, 40);
+    context.fillText('(Install Chart.js for full charts)', 20, 60);
+}
+</script>
+{% endblock %}

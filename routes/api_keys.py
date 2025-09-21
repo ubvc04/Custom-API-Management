@@ -1,11 +1,54 @@
 from flask import Blueprint, request, jsonify, render_template
 from flask_login import login_required, current_user
 from models import ApiKey, ApiUsage, db
-from utils.helpers import generate_secure_api_key, send_api_key_generated_email
+from utils.helpers import generate_secure_api_key, send_api_key_generated_email, generate_otp, send_api_action_otp_email
 from utils.decorators import require_verified_user
 from datetime import datetime, timedelta
 
 api_keys = Blueprint('api_keys', __name__)
+
+@api_keys.route('/request-otp', methods=['POST'])
+@login_required
+@require_verified_user
+def request_otp():
+    """Request OTP for API key operations"""
+    data = request.get_json() if request.is_json else request.form
+    action_type = data.get('action_type')  # 'create' or 'delete'
+    
+    if action_type not in ['create', 'delete']:
+        return jsonify({'error': 'Invalid action type'}), 400
+    
+    # Generate OTP
+    otp_code = generate_otp()
+    current_user.set_otp(otp_code)
+    db.session.commit()
+    
+    # Send OTP email
+    from app import mail
+    send_api_action_otp_email(mail, current_user.email, current_user.username, otp_code, action_type)
+    
+    return jsonify({'message': f'OTP sent to your email for {action_type} operation'}), 200
+
+@api_keys.route('/verify-otp', methods=['POST'])
+@login_required
+@require_verified_user
+def verify_otp():
+    """Verify OTP for API key operations"""
+    data = request.get_json() if request.is_json else request.form
+    otp_code = data.get('otp_code', '').strip()
+    
+    if not otp_code:
+        return jsonify({'error': 'OTP code is required'}), 400
+    
+    if not current_user.verify_otp(otp_code):
+        return jsonify({'error': 'Invalid or expired OTP code'}), 400
+    
+    # Clear OTP after successful verification
+    current_user.otp_code = None
+    current_user.otp_created_at = None
+    db.session.commit()
+    
+    return jsonify({'message': 'OTP verified successfully'}), 200
 
 @api_keys.route('/generate', methods=['GET', 'POST'])
 @login_required
@@ -17,6 +60,18 @@ def generate_key():
     data = request.get_json() if request.is_json else request.form
     key_name = data.get('name', '').strip()
     expires_in_days = data.get('expires_in_days', '').strip()
+    otp_code = data.get('otp_code', '').strip()
+    
+    # Require OTP verification for API key creation
+    if not otp_code:
+        return jsonify({'error': 'OTP code is required for API key creation', 'require_otp': True}), 400
+    
+    if not current_user.verify_otp(otp_code):
+        return jsonify({'error': 'Invalid or expired OTP code', 'require_otp': True}), 400
+    
+    # Clear OTP after successful verification
+    current_user.otp_code = None
+    current_user.otp_created_at = None
     
     # Validate expiration
     expires_at = None
@@ -106,6 +161,20 @@ def update_key_status(key_id):
 @login_required
 @require_verified_user
 def delete_key(key_id):
+    data = request.get_json() if request.is_json else request.form
+    otp_code = data.get('otp_code', '').strip()
+    
+    # Require OTP verification for API key deletion
+    if not otp_code:
+        return jsonify({'error': 'OTP code is required for API key deletion', 'require_otp': True}), 400
+    
+    if not current_user.verify_otp(otp_code):
+        return jsonify({'error': 'Invalid or expired OTP code', 'require_otp': True}), 400
+    
+    # Clear OTP after successful verification
+    current_user.otp_code = None
+    current_user.otp_created_at = None
+    
     api_key = ApiKey.query.filter_by(id=key_id, user_id=current_user.id).first()
     if not api_key:
         return jsonify({'error': 'API key not found'}), 404

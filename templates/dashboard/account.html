@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}Account Settings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>⚙️ Account Settings</h2>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-primary">
+                        🏠 Dashboard
+                    </a>
+                    <a href="{{ url_for('dashboard.keys') }}" class="btn btn-outline-secondary">
+                        🔑 API Keys
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Account Information -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">👤 Account Information</h5>
+                </div>
+                <div class="card-body">
+                    <form id="accountForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" value="{{ current_user.username }}" readonly>
+                            <div class="form-text">Username cannot be changed</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" value="{{ current_user.email }}" readonly>
+                            <div class="form-text">Email cannot be changed</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="createdAt" class="form-label">Member Since</label>
+                            <input type="text" class="form-control" id="createdAt" value="{{ current_user.created_at.strftime('%B %d, %Y') if current_user.created_at }}" readonly>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="lastLogin" class="form-label">Last Login</label>
+                            <input type="text" class="form-control" id="lastLogin" value="{{ current_user.last_login.strftime('%B %d, %Y at %I:%M %p') if current_user.last_login else 'Never' }}" readonly>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="otpVerified" {{ 'checked' if current_user.otp_verified }} disabled>
+                                <label class="form-check-label" for="otpVerified">
+                                    Email Verified
+                                </label>
+                            </div>
+                        </div>
+                        
+                        {% if current_user.is_admin %}
+                        <div class="alert alert-info">
+                            <strong>🛡️ Administrator Account</strong><br>
+                            You have administrative privileges on this system.
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Settings -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">🔒 Security Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="passwordForm">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="currentPassword" name="current_password" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="newPassword" name="new_password" required>
+                            <div class="form-text">Must be at least 8 characters with uppercase, lowercase, and number</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-warning">
+                                🔐 Change Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- API Key Statistics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">📊 API Key Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="d-flex flex-column">
+                                <span class="h4 text-primary" id="totalKeys">-</span>
+                                <small class="text-muted">Total Keys</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="d-flex flex-column">
+                                <span class="h4 text-success" id="activeKeys">-</span>
+                                <small class="text-muted">Active</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="d-flex flex-column">
+                                <span class="h4 text-danger" id="revokedKeys">-</span>
+                                <small class="text-muted">Revoked</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Login History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🕒 Recent Login History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>IP Address</th>
+                                    <th>Device/Browser</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loginHistoryTable">
+                                <tr>
+                                    <td colspan="4" class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        Loading login history...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadApiKeyStats();
+    loadLoginHistory();
+    
+    // Password change form handler
+    document.getElementById('passwordForm').addEventListener('submit', handlePasswordChange);
+});
+
+async function loadApiKeyStats() {
+    try {
+        const response = await fetch('/api/keys/stats');
+        if (response.ok) {
+            const data = await response.json();
+            
+            document.getElementById('totalKeys').textContent = data.total || 0;
+            document.getElementById('activeKeys').textContent = data.active || 0;
+            document.getElementById('revokedKeys').textContent = data.revoked || 0;
+        }
+    } catch (error) {
+        console.error('Failed to load API key stats:', error);
+        document.getElementById('totalKeys').textContent = '0';
+        document.getElementById('activeKeys').textContent = '0';
+        document.getElementById('revokedKeys').textContent = '0';
+    }
+}
+
+async function loadLoginHistory() {
+    try {
+        const response = await fetch('/api/auth/login-history');
+        const loginHistoryTable = document.getElementById('loginHistoryTable');
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (data.history && data.history.length > 0) {
+                loginHistoryTable.innerHTML = data.history.map(login => `
+                    <tr>
+                        <td>${new Date(login.timestamp).toLocaleString()}</td>
+                        <td>${login.ip_address}</td>
+                        <td>${parseUserAgent(login.user_agent)}</td>
+                        <td>
+                            <span class="badge ${login.success ? 'bg-success' : 'bg-danger'}">
+                                ${login.success ? 'Success' : 'Failed'}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                loginHistoryTable.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">
+                            No login history available
+                        </td>
+                    </tr>
+                `;
+            }
+        } else {
+            throw new Error('Failed to load login history');
+        }
+    } catch (error) {
+        console.error('Failed to load login history:', error);
+        document.getElementById('loginHistoryTable').innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center text-muted">
+                    Unable to load login history
+                </td>
+            </tr>
+        `;
+    }
+}
+
+async function handlePasswordChange(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const newPassword = formData.get('new_password');
+    const confirmPassword = formData.get('confirm_password');
+    
+    if (newPassword !== confirmPassword) {
+        alert('New passwords do not match');
+        return;
+    }
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    try {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '⏳ Changing Password...';
+        
+        const response = await fetch('/api/auth/change-password', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert('Password changed successfully!');
+            e.target.reset();
+        } else {
+            throw new Error(data.error || 'Failed to change password');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+}
+
+function parseUserAgent(userAgent) {
+    if (!userAgent) return 'Unknown Device';
+    
+    if (userAgent.includes('Windows')) return '🖥️ Windows';
+    if (userAgent.includes('Mac')) return '🍎 Mac';
+    if (userAgent.includes('iPhone')) return '📱 iPhone';
+    if (userAgent.includes('Android')) return '📱 Android';
+    if (userAgent.includes('iPad')) return '📱 iPad';
+    if (userAgent.includes('Linux')) return '🐧 Linux';
+    
+    return '❓ Unknown Device';
+}
+</script>
+{% endblock %}

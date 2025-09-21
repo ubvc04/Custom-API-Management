@@ -210,3 +210,149 @@ def time_ago(dt):
         return f"{minutes} minutes ago"
     else:
         return "Just now"
+
+def send_login_alert_email(mail_instance, user_email, username, login_time, ip_address, user_agent):
+    """Send login alert email to user"""
+    from datetime import datetime
+    
+    # Parse user agent for device info
+    device_info = "Unknown Device"
+    if user_agent:
+        if "Windows" in user_agent:
+            device_info = "Windows Computer"
+        elif "Mac" in user_agent:
+            device_info = "Mac Computer"
+        elif "iPhone" in user_agent:
+            device_info = "iPhone"
+        elif "Android" in user_agent:
+            device_info = "Android Device"
+        elif "iPad" in user_agent:
+            device_info = "iPad"
+        else:
+            device_info = "Unknown Device"
+    
+    subject = "🔐 New Login to Your API Manager Account"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 20px; text-align: center; }}
+            .content {{ background: #f9f9f9; padding: 30px; }}
+            .login-details {{ background: #fff; border-left: 4px solid #28a745; padding: 20px; margin: 20px 0; }}
+            .security-note {{ background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 20px 0; border-radius: 5px; }}
+            .footer {{ background: #333; color: white; padding: 20px; text-align: center; font-size: 12px; }}
+            .detail-row {{ margin: 10px 0; }}
+            .label {{ font-weight: bold; color: #555; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🔐 Login Alert</h1>
+                <p>Your API Manager Account Security Notification</p>
+            </div>
+            <div class="content">
+                <h2>Hello {username},</h2>
+                <p>We detected a new login to your API Manager account. Here are the details:</p>
+                
+                <div class="login-details">
+                    <h3>📋 Login Details</h3>
+                    <div class="detail-row">
+                        <span class="label">🕐 Time:</span> {login_time.strftime("%B %d, %Y at %I:%M %p UTC")}
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">🌐 IP Address:</span> {ip_address}
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">💻 Device:</span> {device_info}
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">👤 Account:</span> {username} ({user_email})
+                    </div>
+                </div>
+                
+                <div class="security-note">
+                    <h3>🛡️ Security Notice</h3>
+                    <p><strong>Was this you?</strong> If you recognize this login, no action is needed.</p>
+                    <p><strong>Don't recognize this login?</strong> Please:</p>
+                    <ul>
+                        <li>Change your password immediately</li>
+                        <li>Review your API keys and revoke any suspicious ones</li>
+                        <li>Check your account activity</li>
+                        <li>Contact support if you need assistance</li>
+                    </ul>
+                </div>
+                
+                <p>This is an automated security notification to help protect your account.</p>
+            </div>
+            <div class="footer">
+                <p>API Manager - Secure API Key Management</p>
+                <p>This email was sent to {user_email}</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return send_email(mail_instance, user_email, subject, html_content)
+
+def send_api_action_otp_email(mail_instance, user_email, username, otp_code, action_type):
+    """Send OTP email for API key actions (create/delete)"""
+    
+    action_emoji = "🔑" if action_type == "create" else "🗑️"
+    action_text = "Create API Key" if action_type == "create" else "Delete API Key"
+    
+    subject = f"🔐 OTP Required: {action_text}"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white; padding: 20px; text-align: center; }}
+            .content {{ background: #f9f9f9; padding: 30px; }}
+            .otp-code {{ background: #fff; border: 2px dashed #ff6b6b; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; color: #ff6b6b; margin: 20px 0; }}
+            .action-info {{ background: #fff; border-left: 4px solid #ff6b6b; padding: 20px; margin: 20px 0; }}
+            .footer {{ background: #333; color: white; padding: 20px; text-align: center; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>{action_emoji} Security Verification</h1>
+                <p>OTP Required for API Key Action</p>
+            </div>
+            <div class="content">
+                <h2>Hello {username},</h2>
+                <p>You are attempting to <strong>{action_text.lower()}</strong>. For security, please verify this action with the OTP code below:</p>
+                
+                <div class="otp-code">{otp_code}</div>
+                
+                <div class="action-info">
+                    <h3>🛡️ Security Information</h3>
+                    <p><strong>Action:</strong> {action_text}</p>
+                    <p><strong>Account:</strong> {username}</p>
+                    <p><strong>Time:</strong> Valid for 10 minutes</p>
+                </div>
+                
+                <p><strong>This code will expire in 10 minutes.</strong></p>
+                <p>If you didn't request this action, please ignore this email and check your account security.</p>
+            </div>
+            <div class="footer">
+                <p>API Manager - Secure API Key Management</p>
+                <p>This email was sent to {user_email}</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return send_email(mail_instance, user_email, subject, html_content)

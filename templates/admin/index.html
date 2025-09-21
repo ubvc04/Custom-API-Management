@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>🛡️ Admin Dashboard</h2>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-primary">
+                        🏠 User Dashboard
+                    </a>
+                    <button type="button" class="btn btn-outline-danger" onclick="refreshStats()">
+                        🔄 Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Users</h6>
+                            <h3 id="totalUsers">-</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Active API Keys</h6>
+                            <h3 id="totalApiKeys">-</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-key fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">API Requests</h6>
+                            <h3 id="totalRequests">-</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Login Attempts</h6>
+                            <h3 id="totalLogins">-</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-sign-in-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">👥 User Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Verified</th>
+                                    <th>API Keys</th>
+                                    <th>Last Login</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTable">
+                                <tr>
+                                    <td colspan="6" class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        Loading users...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🕒 Recent System Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>IP Address</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activityTable">
+                                <tr>
+                                    <td colspan="5" class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        Loading activity...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Tools -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🛠️ Database Tools</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-info" onclick="showDatabaseStats()">
+                            📊 Database Statistics
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="confirmAction('cleanup')">
+                            🧹 Cleanup Old Logs
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="confirmAction('backup')">
+                            💾 Create Backup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📧 System Notifications</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="testEmailSystem()">
+                            📧 Test Email System
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="showSystemLogs()">
+                            📋 View System Logs
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="showSecurityReport()">
+                            🔒 Security Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Action Modal -->
+<div class="modal fade" id="adminModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="adminModalTitle">Admin Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="adminModalBody">
+                <!-- Dynamic content -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="adminModalAction">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadSystemStats();
+    loadUsers();
+    loadRecentActivity();
+});
+
+async function loadSystemStats() {
+    try {
+        const response = await fetch('/admin/api/stats');
+        if (response.ok) {
+            const data = await response.json();
+            
+            document.getElementById('totalUsers').textContent = data.users || 0;
+            document.getElementById('totalApiKeys').textContent = data.api_keys || 0;
+            document.getElementById('totalRequests').textContent = data.requests || 0;
+            document.getElementById('totalLogins').textContent = data.logins || 0;
+        }
+    } catch (error) {
+        console.error('Failed to load system stats:', error);
+        // Set default values
+        document.getElementById('totalUsers').textContent = '0';
+        document.getElementById('totalApiKeys').textContent = '0';
+        document.getElementById('totalRequests').textContent = '0';
+        document.getElementById('totalLogins').textContent = '0';
+    }
+}
+
+async function loadUsers() {
+    try {
+        const response = await fetch('/admin/api/users');
+        const usersTable = document.getElementById('usersTable');
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (data.users && data.users.length > 0) {
+                usersTable.innerHTML = data.users.map(user => `
+                    <tr>
+                        <td>${user.username}</td>
+                        <td>${user.email}</td>
+                        <td>
+                            <span class="badge ${user.otp_verified ? 'bg-success' : 'bg-warning'}">
+                                ${user.otp_verified ? 'Verified' : 'Pending'}
+                            </span>
+                        </td>
+                        <td>${user.api_key_count || 0}</td>
+                        <td>${user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="viewUser(${user.id})">
+                                    👁️ View
+                                </button>
+                                <button class="btn btn-outline-warning" onclick="toggleUser(${user.id}, '${user.username}')">
+                                    ${user.is_active ? '🚫 Disable' : '✅ Enable'}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                usersTable.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">
+                            No users found
+                        </td>
+                    </tr>
+                `;
+            }
+        } else {
+            throw new Error('Failed to load users');
+        }
+    } catch (error) {
+        console.error('Failed to load users:', error);
+        document.getElementById('usersTable').innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-muted">
+                    Unable to load users
+                </td>
+            </tr>
+        `;
+    }
+}
+
+async function loadRecentActivity() {
+    try {
+        const response = await fetch('/admin/api/activity');
+        const activityTable = document.getElementById('activityTable');
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (data.activity && data.activity.length > 0) {
+                activityTable.innerHTML = data.activity.map(activity => `
+                    <tr>
+                        <td>${new Date(activity.timestamp).toLocaleString()}</td>
+                        <td>${activity.username || 'System'}</td>
+                        <td>${activity.action}</td>
+                        <td>${activity.ip_address || 'System'}</td>
+                        <td>
+                            <span class="badge ${activity.success ? 'bg-success' : 'bg-danger'}">
+                                ${activity.success ? 'Success' : 'Failed'}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                activityTable.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">
+                            No recent activity
+                        </td>
+                    </tr>
+                `;
+            }
+        } else {
+            throw new Error('Failed to load activity');
+        }
+    } catch (error) {
+        console.error('Failed to load activity:', error);
+        document.getElementById('activityTable').innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    Unable to load activity data
+                </td>
+            </tr>
+        `;
+    }
+}
+
+function refreshStats() {
+    loadSystemStats();
+    loadUsers();
+    loadRecentActivity();
+}
+
+function confirmAction(action) {
+    const modal = new bootstrap.Modal(document.getElementById('adminModal'));
+    const title = document.getElementById('adminModalTitle');
+    const body = document.getElementById('adminModalBody');
+    const actionBtn = document.getElementById('adminModalAction');
+    
+    switch (action) {
+        case 'cleanup':
+            title.textContent = 'Cleanup Old Logs';
+            body.innerHTML = '<p>This will remove logs older than 30 days. This action cannot be undone.</p>';
+            actionBtn.textContent = 'Cleanup';
+            actionBtn.className = 'btn btn-warning';
+            break;
+        case 'backup':
+            title.textContent = 'Create Database Backup';
+            body.innerHTML = '<p>This will create a backup of the current database.</p>';
+            actionBtn.textContent = 'Create Backup';
+            actionBtn.className = 'btn btn-success';
+            break;
+    }
+    
+    actionBtn.onclick = () => executeAction(action);
+    modal.show();
+}
+
+async function executeAction(action) {
+    try {
+        const response = await fetch(`/admin/api/action/${action}`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            alert('Action completed successfully: ' + data.message);
+            bootstrap.Modal.getInstance(document.getElementById('adminModal')).hide();
+        } else {
+            throw new Error('Action failed');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function testEmailSystem() {
+    alert('Email system test functionality would be implemented here');
+}
+
+function showSystemLogs() {
+    alert('System logs viewer would be implemented here');
+}
+
+function showSecurityReport() {
+    alert('Security report functionality would be implemented here');
+}
+
+function showDatabaseStats() {
+    alert('Database statistics functionality would be implemented here');
+}
+
+function viewUser(userId) {
+    alert(`View user details for user ID: ${userId}`);
+}
+
+function toggleUser(userId, username) {
+    if (confirm(`Are you sure you want to toggle the status of user "${username}"?`)) {
+        alert(`Toggle user status functionality would be implemented for user ID: ${userId}`);
+    }
+}
+</script>
+{% endblock %}

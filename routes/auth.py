@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from models import User, LoginHistory, db
-from utils.helpers import generate_otp, send_otp_email, send_login_alert, get_client_ip, validate_password_strength
+from utils.helpers import generate_otp, send_otp_email, send_login_alert_email, get_client_ip, validate_password_strength
 from utils.decorators import require_verified_user
 from datetime import datetime
 
@@ -166,7 +166,7 @@ def login():
         
         # Send login alert email
         from app import mail
-        send_login_alert(mail, user.email, user.username, ip_address, datetime.utcnow())
+        send_login_alert_email(mail, user.email, user.username, datetime.utcnow(), ip_address, user_agent)
         
         return jsonify({
             'message': 'Login successful!',

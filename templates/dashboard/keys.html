@@ -231,11 +231,69 @@
         </div>
     </div>
 </div>
+
+<!-- OTP Verification Modal -->
+<div id="otpModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">🔐 Security Verification</h3>
+                <p class="text-sm text-gray-600 mt-1">Enter the OTP sent to your email</p>
+            </div>
+            
+            <form id="otpForm">
+                <div class="px-6 py-4 space-y-4">
+                    <div id="otpActionInfo" class="bg-blue-50 border border-blue-200 rounded-md p-3">
+                        <p class="text-sm text-blue-800">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <span id="otpActionText">An OTP has been sent to your email.</span>
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label for="otpCode" class="block text-sm font-medium text-gray-700 mb-2">
+                            6-Digit OTP Code
+                        </label>
+                        <input type="text" 
+                               id="otpCode" 
+                               name="otp_code" 
+                               maxlength="6" 
+                               pattern="[0-9]{6}"
+                               placeholder="123456"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-center text-2xl tracking-widest"
+                               required>
+                        <p class="text-xs text-gray-500 mt-1">Code expires in 10 minutes</p>
+                    </div>
+                    
+                    <div id="otpError" class="hidden text-red-600 text-sm"></div>
+                </div>
+                
+                <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                    <button type="button" onclick="closeOtpModal()" 
+                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="requestNewOtp()" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Resend OTP
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 gradient-bg text-white rounded-md hover:opacity-90">
+                        <i class="fas fa-check mr-2"></i>
+                        Verify & Continue
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     let apiKeys = [];
+    let pendingOtpAction = null; // Store the pending action (create/delete) and its data
 
     // Load API keys
     async function loadKeys() {
@@ -330,6 +388,50 @@
         }).join('');
     }
 
+    // OTP Modal functions
+    function openOtpModal(actionType, actionData = null) {
+        pendingOtpAction = { type: actionType, data: actionData };
+        
+        const actionText = actionType === 'create' ? 'Create API Key' : 'Delete API Key';
+        document.getElementById('otpActionText').textContent = `OTP required to ${actionText.toLowerCase()}. Check your email.`;
+        
+        document.getElementById('otpModal').classList.remove('hidden');
+        document.getElementById('otpCode').focus();
+    }
+
+    function closeOtpModal() {
+        document.getElementById('otpModal').classList.add('hidden');
+        document.getElementById('otpForm').reset();
+        document.getElementById('otpError').classList.add('hidden');
+        pendingOtpAction = null;
+    }
+
+    async function requestNewOtp() {
+        if (!pendingOtpAction) return;
+        
+        try {
+            const response = await fetch('/keys/request-otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action_type: pendingOtpAction.type
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                showFlashMessage(data.message, 'success');
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            showFlashMessage(error.message, 'error');
+        }
+    }
+
     // Modal functions
     function openGenerateModal() {
         document.getElementById('generateModal').classList.remove('hidden');
@@ -400,15 +502,27 @@
             return;
         }
         
+        // Request OTP first
         try {
-            const result = await apiRequest(`/keys/${keyId}/delete`, {
-                method: 'DELETE'
+            const response = await fetch('/keys/request-otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action_type: 'delete'
+                })
             });
             
-            showFlashMessage(result.message, 'success');
-            loadKeys();
+            const data = await response.json();
+            
+            if (response.ok) {
+                openOtpModal('delete', { keyId: keyId });
+            } else {
+                throw new Error(data.error);
+            }
         } catch (error) {
-            // Error already shown
+            showFlashMessage(error.message, 'error');
         }
     }
 
@@ -441,18 +555,28 @@
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
             
+            // Request OTP first
             try {
-                const result = await apiRequest('/keys/generate', {
+                const response = await fetch('/keys/request-otp', {
                     method: 'POST',
-                    body: JSON.stringify(data)
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action_type: 'create'
+                    })
                 });
                 
-                closeGenerateModal();
-                document.getElementById('generatedKey').value = result.api_key;
-                document.getElementById('showKeyModal').classList.remove('hidden');
-                loadKeys();
+                const result = await response.json();
+                
+                if (response.ok) {
+                    closeGenerateModal();
+                    openOtpModal('create', data);
+                } else {
+                    throw new Error(result.error);
+                }
             } catch (error) {
-                // Error already shown
+                showFlashMessage(error.message, 'error');
             }
         });
         
@@ -475,6 +599,79 @@
                 loadKeys();
             } catch (error) {
                 // Error already shown
+            }
+        });
+        
+        // OTP form
+        document.getElementById('otpForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!pendingOtpAction) {
+                showFlashMessage('No pending action to verify', 'error');
+                return;
+            }
+            
+            const formData = new FormData(this);
+            const otpCode = formData.get('otp_code');
+            
+            try {
+                if (pendingOtpAction.type === 'create') {
+                    // Include OTP in the create request
+                    const createData = { ...pendingOtpAction.data, otp_code: otpCode };
+                    
+                    const result = await fetch('/keys/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(createData)
+                    });
+                    
+                    const data = await result.json();
+                    
+                    if (result.ok) {
+                        closeOtpModal();
+                        document.getElementById('generatedKey').value = data.api_key;
+                        document.getElementById('showKeyModal').classList.remove('hidden');
+                        loadKeys();
+                        showFlashMessage(data.message, 'success');
+                    } else {
+                        throw new Error(data.error);
+                    }
+                    
+                } else if (pendingOtpAction.type === 'delete') {
+                    // Include OTP in the delete request
+                    const deleteData = { otp_code: otpCode };
+                    const keyId = pendingOtpAction.data.keyId;
+                    
+                    const result = await fetch(`/keys/${keyId}/delete`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(deleteData)
+                    });
+                    
+                    const data = await result.json();
+                    
+                    if (result.ok) {
+                        closeOtpModal();
+                        loadKeys();
+                        showFlashMessage(data.message, 'success');
+                    } else {
+                        throw new Error(data.error);
+                    }
+                }
+                
+            } catch (error) {
+                const errorDiv = document.getElementById('otpError');
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+                
+                // Clear error after 5 seconds
+                setTimeout(() => {
+                    errorDiv.classList.add('hidden');
+                }, 5000);
             }
         });
     });
