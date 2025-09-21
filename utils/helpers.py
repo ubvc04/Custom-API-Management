@@ -33,7 +33,7 @@ def send_email(mail_instance, to_email, subject, html_content, text_content=None
             recipients=[to_email],
             html=html_content,
             body=text_content or html_content,
-            sender=current_app.config['SMTP_USERNAME']
+            sender=current_app.config['MAIL_USERNAME']
         )
         mail_instance.send(msg)
         return True
